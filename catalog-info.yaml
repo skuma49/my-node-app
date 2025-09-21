@@ -1,8 +1,431 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: "my-node-app"
+  name: my-node-app
+  title: My Node.js API Application
+  description: A comprehensive Node.js REST API server with user management, product management, and utility endpoints
+  annotations:
+    github.com/project-slug: skuma49/my-node-app
+    backstage.io/source-location: url:https://github.com/skuma49/my-node-app
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - nodejs
+    - express
+    - api
+    - rest
+    - crud
+    - microservice
+  links:
+    - url: https://github.com/skuma49/my-node-app
+      title: GitHub Repository
+      icon: github
+    - url: http://localhost:3001/api/health
+      title: Health Check
+      icon: monitor
+    - url: http://localhost:3001/api/status
+      title: API Status
+      icon: dashboard
 spec:
   type: service
+  lifecycle: development
   owner: user:guest
-  lifecycle: experimental
+  system: demo-system
+  providesApis:
+    - my-node-app-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: my-node-app-api
+  title: My Node.js API
+  description: REST API for user and product management with health monitoring
+  tags:
+    - rest
+    - json
+    - crud
+spec:
+  type: openapi
+  lifecycle: development
+  owner: user:guest
+  system: demo-system
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: My Node.js API
+      description: A comprehensive REST API for user and product management
+      version: 1.0.0
+      contact:
+        name: API Support
+        email: support@example.com
+    servers:
+      - url: http://localhost:3001
+        description: Development server
+    paths:
+      /api/health:
+        get:
+          summary: Health check endpoint
+          description: Returns the health status of the API server
+          responses:
+            '200':
+              description: Server is healthy
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: healthy
+                      timestamp:
+                        type: string
+                        format: date-time
+                      uptime:
+                        type: number
+                      version:
+                        type: string
+      /api/status:
+        get:
+          summary: Server status and information
+          description: Returns detailed server status and available endpoints
+          responses:
+            '200':
+              description: Server status information
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      server:
+                        type: string
+                      environment:
+                        type: string
+                      nodeVersion:
+                        type: string
+                      endpoints:
+                        type: array
+                        items:
+                          type: string
+      /api/users:
+        get:
+          summary: Get all users
+          description: Retrieve a list of all users with optional filtering
+          parameters:
+            - name: role
+              in: query
+              description: Filter users by role
+              schema:
+                type: string
+                enum: [admin, user]
+            - name: limit
+              in: query
+              description: Limit the number of results
+              schema:
+                type: integer
+                minimum: 1
+          responses:
+            '200':
+              description: List of users
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+                      count:
+                        type: integer
+        post:
+          summary: Create a new user
+          description: Create a new user with the provided information
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - name
+                    - email
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    role:
+                      type: string
+                      enum: [admin, user]
+                      default: user
+          responses:
+            '201':
+              description: User created successfully
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                      data:
+                        $ref: '#/components/schemas/User'
+                      message:
+                        type: string
+            '400':
+              description: Bad request - missing required fields
+      /api/users/{id}:
+        get:
+          summary: Get user by ID
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            '200':
+              description: User details
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                      data:
+                        $ref: '#/components/schemas/User'
+            '404':
+              description: User not found
+        put:
+          summary: Update user
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    role:
+                      type: string
+                      enum: [admin, user]
+          responses:
+            '200':
+              description: User updated successfully
+            '404':
+              description: User not found
+        delete:
+          summary: Delete user
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            '200':
+              description: User deleted successfully
+            '404':
+              description: User not found
+      /api/products:
+        get:
+          summary: Get all products
+          description: Retrieve a list of all products with optional filtering
+          parameters:
+            - name: category
+              in: query
+              description: Filter products by category
+              schema:
+                type: string
+            - name: limit
+              in: query
+              description: Limit the number of results
+              schema:
+                type: integer
+                minimum: 1
+            - name: minPrice
+              in: query
+              description: Minimum price filter
+              schema:
+                type: number
+            - name: maxPrice
+              in: query
+              description: Maximum price filter
+              schema:
+                type: number
+          responses:
+            '200':
+              description: List of products
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+                      count:
+                        type: integer
+        post:
+          summary: Create a new product
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - name
+                    - price
+                    - category
+                  properties:
+                    name:
+                      type: string
+                    price:
+                      type: number
+                    category:
+                      type: string
+                    stock:
+                      type: integer
+                      default: 0
+          responses:
+            '201':
+              description: Product created successfully
+            '400':
+              description: Bad request - missing required fields
+      /api/products/{id}:
+        get:
+          summary: Get product by ID
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            '200':
+              description: Product details
+            '404':
+              description: Product not found
+        put:
+          summary: Update product
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    price:
+                      type: number
+                    category:
+                      type: string
+                    stock:
+                      type: integer
+          responses:
+            '200':
+              description: Product updated successfully
+            '404':
+              description: Product not found
+        delete:
+          summary: Delete product
+          parameters:
+            - name: id
+              in: path
+              required: true
+              schema:
+                type: integer
+          responses:
+            '200':
+              description: Product deleted successfully
+            '404':
+              description: Product not found
+      /api/search/users:
+        get:
+          summary: Search users
+          parameters:
+            - name: q
+              in: query
+              required: true
+              description: Search query for user name or email
+              schema:
+                type: string
+          responses:
+            '200':
+              description: Search results
+            '400':
+              description: Missing search query
+      /api/search/products:
+        get:
+          summary: Search products
+          parameters:
+            - name: q
+              in: query
+              required: true
+              description: Search query for product name or category
+              schema:
+                type: string
+          responses:
+            '200':
+              description: Search results
+            '400':
+              description: Missing search query
+    components:
+      schemas:
+        User:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: John Doe
+            email:
+              type: string
+              format: email
+              example: john@example.com
+            role:
+              type: string
+              enum: [admin, user]
+              example: user
+        Product:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: Laptop
+            price:
+              type: number
+              example: 999.99
+            category:
+              type: string
+              example: Electronics
+            stock:
+              type: integer
+              example: 50
